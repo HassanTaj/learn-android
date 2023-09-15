@@ -10,38 +10,48 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+private val _darkColorScheme = darkColorScheme(
+
+    primary = Color(0xFF366ACD),
+    secondary = Color(0xFF1565C0),//PurpleGrey80,
+    tertiary = Color(0xFF0D47A1),//Pink80,
+
+    background = Color(0xFF000000),
+    surface = Color(0xFF000000),
+
+    onPrimary = Color(0xFFFFFFFF),
+    onSecondary = Color(0xFFF6F6F6),
+    onTertiary = Color(0xFFFFFFFF),
+    onBackground = Color(0xFF5F5F5F),
+    onSurface = Color(0xFF5F5F5F),
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+private val _lightColorScheme = lightColorScheme(
+    primary = Color(0xFF0D47A1),
+    secondary = Color(0xFF1565C0),
+    tertiary = Color(0xFF1976D2),
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+//
+//    background = Color(0xFFE8E7E8),
+//    surface = Color(0xFFD8D8D8),
+//    onPrimary = Color.Black,
+//    onSecondary = Color.Black,
+//    onTertiary = Color.Black,
+//    onBackground = Color(0xFFF3F2F4),
+//    onSurface = Color(0xFFFEFEFE),
 )
 
 @Composable
 fun TodosTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -50,8 +60,8 @@ fun TodosTheme(
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        darkTheme -> _darkColorScheme
+        else -> _lightColorScheme
     }
     val view = LocalView.current
     if (!view.isInEditMode) {
