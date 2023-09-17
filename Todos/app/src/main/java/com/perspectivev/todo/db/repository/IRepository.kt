@@ -7,6 +7,7 @@ interface IRepository<TEntity> {
      * Retrieve all the items from the the given data source.
      */
     fun get(): List<TEntity>
+
     /**
      * Retrieve all the items from the the given data source.
      */
@@ -16,7 +17,6 @@ interface IRepository<TEntity> {
      * Retrieve an item from the given data source that matches with the [id].
      */
     fun get(id: Int): Flow<TEntity?>
-
 
     /**
      * Insert item in the data source

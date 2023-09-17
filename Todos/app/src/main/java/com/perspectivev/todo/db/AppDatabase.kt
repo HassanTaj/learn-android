@@ -6,10 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.perspectivev.todo.db.daos.TodoDao
 import com.perspectivev.todo.db.entities.Todo
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
 
-@Database(entities = [Todo::class], version =3, exportSchema = false)
+@Database(entities = [Todo::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun todoDao(): TodoDao
 
@@ -26,7 +24,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "todo-app-db"
-                ).build()
+                )
+                    .allowMainThreadQueries()
+                    .build()
                 INSTANCE = instance
                 // return instance
                 instance

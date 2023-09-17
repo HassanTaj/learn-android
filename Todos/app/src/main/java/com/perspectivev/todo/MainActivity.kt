@@ -36,14 +36,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -51,57 +47,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelLazy
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.perspectivev.todo.db.AppDatabase
 import com.perspectivev.todo.db.daos.TodoRepository
-import com.perspectivev.todo.db.entities.LatestUiState
 import com.perspectivev.todo.db.entities.Todo
 import com.perspectivev.todo.db.entities.TodoViewModel
 import com.perspectivev.todo.ui.theme.TodosTheme
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.getAndUpdate
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private lateinit var _db: AppDatabase
-    private lateinit var _viewModel: TodoViewModel
-    private lateinit var _todoRepository: TodoRepository
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        _db = AppDatabase.getDbInstance(this.applicationContext)
-        _todoRepository = TodoRepository(_db.todoDao(), _db.todoDao().getAll())
-        _viewModel = TodoViewModel(_todoRepository)
-
-        val todos = mutableStateListOf<Todo>()
-        // Start a coroutine in the lifecycle scope
-        lifecycleScope.launch {
-            // repeatOnLifecycle launches the block in a new coroutine every time the
-            // lifecycle is in the STARTED state (or above) and cancels it when it's STOPPED.
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Trigger the flow and start listening for values.
-                // Note that this happens when lifecycle is STARTED and stops
-                // collecting when the lifecycle is STOPPED
-                _viewModel.uiState.collectLatest { uiState ->
-                    // New value received
-                    when (uiState) {
-                        is LatestUiState.Success -> todos.addAll(uiState.todos)
-                        is LatestUiState.Error -> print(uiState.exception)
-                    }
-                }
-            }
-        }
-
         setContent {
             TodosTheme {
                 Scaffold {
@@ -117,17 +76,16 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoList(modifier: Modifier) {
-    val coroutine = rememberCoroutineScope()
     val context = LocalContext.current
     val db by lazy { AppDatabase.getDbInstance(context) }
     val repository by lazy { TodoRepository(db.todoDao()) }
-//    val viewmodel  = viewModel<TodoViewModel>(
-//        factory = object : ViewModelProvider.Factory {
-//            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-//                return TodoViewModel(repository) as T
-//            }
-//        }
-//    )
+    val viewModel = viewModel<TodoViewModel>(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return TodoViewModel(repository) as T
+            }
+        }
+    )
     var todoModel by remember {
         val td = Todo(
             0,
@@ -136,32 +94,14 @@ fun TodoList(modifier: Modifier) {
             isDone = false,
             isDeleted = false
         )
-
         mutableStateOf(td)
     }
 
     var text by rememberSaveable { mutableStateOf("") }
-//    var searching by remember { mutableStateOf(false) }
 
-    val todosStates = MutableStateFlow<SnapshotStateList<Todo>>(mutableStateListOf())
-
-    val todosSnapshotList = if (LocalInspectionMode.current) {
-        val allTodos: SnapshotStateList<Todo> = mutableStateListOf()
-        for (i in 1..5) {
-            allTodos.add(Todo(i, "Test $i", null, isDone = false, isDeleted = false))
-        }
-        allTodos
-    } else {
-        val allTodos by repository.allItems.collectAsState(initial = emptyList())
-        allTodos.toMutableStateList()
-    }
-
-    todosStates.update { list ->
-        list.addAll(todosSnapshotList)
-        list
-    }
-
-    val todos by todosStates.collectAsStateWithLifecycle()
+//     Collect the state from the StateFlow using collectAsState
+    val todos by viewModel.getTodosList(isInspectionMode = LocalInspectionMode.current)
+        .collectAsState(emptyList())
 
     Column(
         modifier = modifier
@@ -192,17 +132,18 @@ fun TodoList(modifier: Modifier) {
                     if (text == "") {
                         Toast.makeText(context, "Please enter task", Toast.LENGTH_SHORT).show()
                     } else {
-                        coroutine.launch {
-                            if (todoModel.id == 0) {
-                                val todo = Todo(0, text, "", isDone = false, isDeleted = false)
-                                repository.insert(todo)
-                            } else {
-                                todoModel.task = text
-                                repository.update(todoModel)
-                            }
-                            text = ""
-                            todoModel = Todo(0, text, "", isDone = false, isDeleted = false)
+                        if (todoModel.id == 0) {
+                            val todo = Todo(0, text, "", isDone = false, isDeleted = false)
+                            viewModel.insert(todo)
+                        } else {
+                            todoModel.task = text
+                            val updatedList = todos.toMutableList()
+                            val indexOfTodo = updatedList.indexOf(todoModel)
+                            updatedList[indexOfTodo] = todoModel
+                            viewModel.update(todoModel, updatedList)
                         }
+                        text = ""
+                        todoModel = Todo(0, text, "", isDone = false, isDeleted = false)
                     }
 
                 },
@@ -220,8 +161,7 @@ fun TodoList(modifier: Modifier) {
                 Icon(imageVector = Icons.Outlined.Add, contentDescription = "Save Todo")
             }
         }
-
-
+        
         /* Items List */
         LazyColumn(
             modifier = Modifier
@@ -230,7 +170,7 @@ fun TodoList(modifier: Modifier) {
                 .padding(0.dp)
         )
         {
-            itemsIndexed(items = todos, key = { index, it -> it.id }) { index, it ->
+            itemsIndexed(items = todos, key = { _, it -> it.id }) { index, it ->
                 ListItem(
                     modifier = Modifier
                         .padding(2.dp, 5.dp)
@@ -239,7 +179,6 @@ fun TodoList(modifier: Modifier) {
                             color = MaterialTheme.colorScheme.primary,
                             shape = RoundedCornerShape(corner = CornerSize(8.dp))
                         )
-                        .padding(0.dp)
                         .clickable {
                             text = it.task
                             todoModel = it
@@ -249,26 +188,16 @@ fun TodoList(modifier: Modifier) {
                         Checkbox(
                             checked = it.isDone,
                             onCheckedChange = { isChecked ->
-                                // TODO: need to see why stat doesn't update here 
                                 it.isDone = isChecked
-                                coroutine.launch {
-                                    todosStates.getAndUpdate {
-                                        it[index].isDone = isChecked
-                                        todosStates.emit(it)
-                                        it
-                                    }
-                                    repository.update(it)
-                                    text = ""
-                                }
+                                val updatedList = todos.toMutableList()
+                                updatedList[index].isDone = isChecked
+                                viewModel.update(it, updatedList)
+                                text = ""
                             })
                     },
                     trailingContent = {
                         IconButton(onClick = {
-                            coroutine.launch {
-                                val isDone = !it.isDone
-                                it.isDone = isDone
-                                repository.delete(it)
-                            }
+                            viewModel.delete(it)
                         }) {
                             Icon(
                                 imageVector = Icons.Outlined.Delete,
@@ -278,6 +207,9 @@ fun TodoList(modifier: Modifier) {
                         }
                     }
                 )
+
+//                if (index < todos.lastIndex)
+//                    Divider(color = MaterialTheme.colorScheme.primary, thickness = 1.dp)
             }
             // for single item use item {}
         }

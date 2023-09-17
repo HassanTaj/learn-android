@@ -6,7 +6,6 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
 
 @Dao
 interface IDao<TEntity> {
@@ -28,6 +27,7 @@ interface IDao<TEntity> {
 
     @Delete
     suspend fun delete(item: TEntity)
+
     @Delete
     suspend fun delete(vararg items: TEntity)
 }

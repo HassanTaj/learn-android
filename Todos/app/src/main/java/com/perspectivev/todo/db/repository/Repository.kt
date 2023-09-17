@@ -5,8 +5,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 open class Repository<TEntity, TDao>(
     private var dao: TDao,
-    public var allItems: Flow<List<TEntity>>,
-    public var searchResults: MutableStateFlow<List<TEntity>>
+    var allItems: Flow<List<TEntity>>,
+    var searchResults: MutableStateFlow<List<TEntity>>
 ) : IRepository<TEntity>
         where TDao : IDao<TEntity> {
     override fun getAll(): Flow<List<TEntity>> = this.dao.getAll()
@@ -18,5 +18,4 @@ open class Repository<TEntity, TDao>(
     override suspend fun delete(vararg items: TEntity) = this.dao.delete(items = items)
     override suspend fun insert(item: TEntity) = this.dao.insert(item)
     override suspend fun insert(vararg items: TEntity) = this.dao.insert(items = items)
-
 }
