@@ -6,11 +6,11 @@ plugins {
 
 android {
     namespace = "com.perspectivev.workouttracker"
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.perspectivev.workouttracker"
-        minSdk = 31
+        minSdk = 33
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
@@ -55,7 +55,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.9.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
     implementation("androidx.activity:activity-compose:1.7.2")
-    implementation(platform("androidx.compose:compose-bom:2023.03.00"))
+    implementation(platform("androidx.compose:compose-bom:2023.10.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -93,6 +93,14 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycle_version")  // Lifecycle utilities for Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycle_version") // Saved state module for ViewModel
     ksp("androidx.lifecycle:lifecycle-compiler:$lifecycle_version") // Annotation processor
+
+    val nav_version = "2.7.3"
+
+    implementation("androidx.navigation:navigation-runtime-ktx:$nav_version")
+    implementation("androidx.navigation:navigation-ui-ktx:$nav_version")
+    implementation("androidx.navigation:navigation-fragment-ktx:$nav_version")
+    implementation("androidx.navigation:navigation-compose:$nav_version")
+
 
 //    implementation("androidx.lifecycle:lifecycle-common-java8:$lifecycle_version") // alternately - if using Java8, use the following instead of lifecycle-compiler
 //    implementation("androidx.lifecycle:lifecycle-service:$lifecycle_version")  // optional - helpers for implementing LifecycleOwner in a Service
